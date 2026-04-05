@@ -51,6 +51,11 @@
   }
 
   onMount(() => {
+    const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 140);
+    gradient.addColorStop(0, 'rgba(103, 217, 255, 0.18)');
+    gradient.addColorStop(0.6, 'rgba(103, 217, 255, 0.06)');
+    gradient.addColorStop(1, 'rgba(103, 217, 255, 0.0)');
+
     chart = new Chart(canvas, {
       type: 'line',
       data: {
@@ -60,11 +65,15 @@
             label: 'Fuel Mass',
             data: samples.map((sample) => sample.fuelMassKg),
             borderColor: '#67d9ff',
-            backgroundColor: 'rgba(103, 217, 255, 0.12)',
+            backgroundColor: gradient,
             fill: true,
-            borderWidth: 2,
+            borderWidth: 1.8,
             pointRadius: 0,
-            tension: 0.18
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: '#67d9ff',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            tension: 0.26
           }
         ]
       },
@@ -80,6 +89,19 @@
             display: false
           },
           tooltip: {
+            backgroundColor: 'rgba(6, 12, 26, 0.92)',
+            borderColor: 'rgba(103, 217, 255, 0.2)',
+            borderWidth: 1,
+            titleFont: {
+              family: "'JetBrains Mono', monospace",
+              size: 11
+            },
+            bodyFont: {
+              family: "'JetBrains Mono', monospace",
+              size: 11
+            },
+            padding: 10,
+            cornerRadius: 8,
             callbacks: {
               label(context) {
                 return `${context.parsed.y.toLocaleString('en-US', {
@@ -92,20 +114,38 @@
         scales: {
           x: {
             grid: {
-              color: 'rgba(173, 205, 255, 0.08)'
+              color: 'rgba(160, 190, 255, 0.05)',
+              drawTicks: false
+            },
+            border: {
+              display: false
             },
             ticks: {
-              color: 'rgba(232, 241, 255, 0.62)',
-              maxTicksLimit: 4
+              color: 'rgba(200, 218, 255, 0.4)',
+              font: {
+                family: "'JetBrains Mono', monospace",
+                size: 9
+              },
+              maxTicksLimit: 4,
+              padding: 6
             }
           },
           y: {
             grid: {
-              color: 'rgba(173, 205, 255, 0.08)'
+              color: 'rgba(160, 190, 255, 0.05)',
+              drawTicks: false
+            },
+            border: {
+              display: false
             },
             ticks: {
-              color: 'rgba(232, 241, 255, 0.62)',
+              color: 'rgba(200, 218, 255, 0.4)',
+              font: {
+                family: "'JetBrains Mono', monospace",
+                size: 9
+              },
               maxTicksLimit: 4,
+              padding: 6,
               callback(value) {
                 return `${Number(value).toLocaleString('en-US', {
                   maximumFractionDigits: 0
@@ -130,7 +170,7 @@
   $: syncChart();
 </script>
 
-<section class="glass-panel chart-panel">
+<section class="glass-panel chart-panel" id="fuel-chart-panel">
   <div class="chart-topline">
     <div>
       <p class="hud-eyebrow">Propellant Curve</p>
@@ -141,9 +181,10 @@
         <span>Current</span>
         <strong>{formatMass(latestSample.fuelMassKg)}</strong>
       </div>
+      <div class="chart-summary-sep"></div>
       <div>
         <span>Spent</span>
-        <strong>{formatMass(spentFuelKg)}</strong>
+        <strong class="spent-value">{formatMass(spentFuelKg)}</strong>
       </div>
     </div>
   </div>
@@ -153,8 +194,8 @@
   </div>
 
   <div class="chart-foot">
-    <span>Burn model: Tsiolkovsky equation + mission clock samples</span>
-    <span>{formatHourMark(latestSample)}</span>
+    <span>Burn model: Tsiolkovsky</span>
+    <span class="foot-time">{formatHourMark(latestSample)}</span>
   </div>
 </section>
 
@@ -163,44 +204,53 @@
     pointer-events: auto;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 12px;
-    min-height: 214px;
-    height: 214px;
-    border-radius: 24px;
-    padding: 16px 18px;
-    background:
-      linear-gradient(180deg, rgba(10, 18, 35, 0.86), rgba(5, 10, 22, 0.62)),
-      var(--panel-bg);
+    gap: 10px;
+    min-height: 200px;
+    height: 200px;
+    padding: 14px 16px;
   }
 
   .chart-topline {
     display: flex;
     align-items: start;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
   }
 
   .chart-summary {
     display: flex;
-    gap: 14px;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .chart-summary div {
     display: grid;
-    gap: 4px;
+    gap: 3px;
   }
 
-  .chart-summary span,
-  .chart-foot {
-    font-size: 0.68rem;
+  .chart-summary-sep {
+    width: 1px;
+    background: rgba(120, 170, 255, 0.1);
+  }
+
+  .chart-summary span {
+    font-family: var(--mono-font);
+    font-size: 0.56rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     color: var(--muted-soft);
   }
 
   .chart-summary strong {
-    font-size: 0.9rem;
-    color: #f6fbff;
+    font-family: var(--mono-font);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #e8f0ff;
+  }
+
+  .spent-value {
+    color: var(--accent-amber) !important;
   }
 
   .chart-canvas-wrap {
@@ -208,7 +258,7 @@
   }
 
   .chart-canvas-wrap :global(canvas) {
-    max-height: 120px;
+    max-height: 110px;
   }
 
   canvas {
@@ -220,21 +270,35 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
+    font-family: var(--mono-font);
+    font-size: 0.56rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted-soft);
     line-height: 1.4;
+  }
+
+  .foot-time {
+    color: var(--accent-cyan);
   }
 
   @media (max-width: 860px) {
     .chart-topline,
-    .chart-summary,
-    .chart-foot {
+    .chart-summary {
       flex-direction: column;
       align-items: flex-start;
     }
 
+    .chart-summary-sep {
+      width: 100%;
+      height: 1px;
+    }
+
     .chart-panel {
       height: auto;
-      min-height: 240px;
+      min-height: 220px;
     }
   }
 </style>

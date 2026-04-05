@@ -21,17 +21,19 @@
   }
 
   const focusOptions = [
-    { value: 'system', label: 'System' },
-    { value: 'earth', label: 'Earth' },
-    { value: 'moon', label: 'Moon' },
-    { value: 'rocket', label: 'Rocket' }
+    { value: 'system', label: 'System', icon: '◎' },
+    { value: 'earth', label: 'Earth', icon: '⊕' },
+    { value: 'moon', label: 'Moon', icon: '☽' },
+    { value: 'rocket', label: 'Rocket', icon: '▲' }
   ];
 </script>
 
-<section class="glass-panel telemetry-panel">
+<section class="glass-panel telemetry-panel" id="telemetry-panel">
   <div class="telemetry-header">
     <div class="telemetry-lockup">
-      <p class="hud-eyebrow">Telemetry</p>
+      <p class="hud-eyebrow">
+        <span class="live-dot"></span> Telemetry
+      </p>
       <h2 class="hud-title">{telemetry.strategyLabel}</h2>
     </div>
     <div class="soi-pill">{telemetry.sphereOfInfluence} SOI</div>
@@ -44,8 +46,8 @@
     </article>
     <article class="status-card">
       <span class="status-label">Mission Clock</span>
-      <strong>{telemetry.missionElapsedLabel}</strong>
-      <small>Time warp x{telemetry.timeWarp}</small>
+      <strong class="mono-value">{telemetry.missionElapsedLabel}</strong>
+      <small>Time warp ×{telemetry.timeWarp}</small>
     </article>
   </div>
 
@@ -57,8 +59,10 @@
           class:active={focusTarget === option.value}
           on:click={() => onFocusChange(option.value)}
           type="button"
+          id="focus-{option.value}"
         >
-          {option.label}
+          <span class="focus-icon">{option.icon}</span>
+          <span>{option.label}</span>
         </button>
       {/each}
     </div>
@@ -67,40 +71,43 @@
   <div class="metric-grid">
     <article class="metric-card">
       <div class="metric-label">Velocity</div>
-      <div class="metric-value">{speedFormatter.format(telemetry.velocityKmPerSecond)} km/s</div>
+      <div class="metric-value">{speedFormatter.format(telemetry.velocityKmPerSecond)} <span class="unit">km/s</span></div>
       <div class="metric-subtext">
-        Achieved burn: {speedFormatter.format(telemetry.achievedDeltaVKmPerSecond)} km/s
+        Achieved: {speedFormatter.format(telemetry.achievedDeltaVKmPerSecond)} km/s
       </div>
     </article>
 
     <article class="metric-card">
       <div class="metric-label">Fuel Remaining</div>
       <div class="metric-value">{formatMass(telemetry.fuelMassKg)}</div>
-      <div class="metric-subtext">{telemetry.burnActive ? 'Burning' : 'Coasting'}</div>
+      <div class="metric-subtext status-dot-wrap">
+        <span class="status-dot {telemetry.burnActive ? 'burning' : 'coasting'}"></span>
+        {telemetry.burnActive ? 'Burning' : 'Coasting'}
+      </div>
     </article>
 
     <article class="metric-card">
       <div class="metric-label">Earth Altitude</div>
       <div class="metric-value">{formatDistance(telemetry.earthAltitudeKm)}</div>
-      <div class="metric-subtext">Surface-referenced altitude</div>
+      <div class="metric-subtext">Surface-referenced</div>
     </article>
 
     <article class="metric-card">
       <div class="metric-label">Moon Range</div>
       <div class="metric-value">{formatDistance(telemetry.moonRangeKm)}</div>
-      <div class="metric-subtext">Measured to the lunar surface</div>
+      <div class="metric-subtext">To lunar surface</div>
     </article>
 
     <article class="metric-card">
       <div class="metric-label">Closest Approach</div>
       <div class="metric-value">{formatDistance(telemetry.closestMoonApproachKm)}</div>
-      <div class="metric-subtext">Best lunar flyby estimate so far</div>
+      <div class="metric-subtext">Best flyby estimate</div>
     </article>
 
     <article class="metric-card">
       <div class="metric-label">Dominant Body</div>
-      <div class="metric-value">{telemetry.sphereOfInfluence}</div>
-      <div class="metric-subtext">Current sphere of influence</div>
+      <div class="metric-value body-name">{telemetry.sphereOfInfluence}</div>
+      <div class="metric-subtext">Sphere of influence</div>
     </article>
   </div>
 </section>
@@ -108,100 +115,195 @@
 <style>
   .telemetry-panel {
     pointer-events: auto;
-    width: min(370px, calc(100vw - 40px));
-    border-radius: 28px;
-    padding: 18px;
+    width: min(360px, calc(100vw - 32px));
+    padding: 16px;
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .telemetry-header {
     display: flex;
     align-items: start;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
 
   .telemetry-lockup {
     display: grid;
-    gap: 4px;
+    gap: 3px;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    margin-right: 4px;
+    vertical-align: middle;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
   }
 
   .soi-pill {
-    border: 1px solid rgba(122, 215, 180, 0.2);
-    background: rgba(122, 215, 180, 0.08);
+    flex-shrink: 0;
+    border: 1px solid rgba(110, 231, 183, 0.16);
+    background: rgba(110, 231, 183, 0.06);
     color: var(--accent-emerald);
     border-radius: 999px;
-    padding: 7px 10px;
-    font-size: 0.7rem;
+    padding: 5px 10px;
+    font-family: var(--mono-font);
+    font-size: 0.6rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     white-space: nowrap;
   }
 
   .status-grid {
     display: grid;
-    grid-template-columns: 1.2fr 0.9fr;
-    gap: 10px;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 8px;
   }
 
   .status-card {
     display: grid;
-    gap: 6px;
-    padding: 12px 13px;
-    border-radius: 18px;
-    background: rgba(8, 15, 29, 0.76);
-    border: 1px solid rgba(131, 180, 255, 0.12);
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(6, 13, 26, 0.8);
+    border: 1px solid rgba(120, 170, 255, 0.08);
+    transition: border-color 200ms ease;
+  }
+
+  .status-card:hover {
+    border-color: rgba(120, 170, 255, 0.18);
   }
 
   .status-primary {
     background:
-      linear-gradient(180deg, rgba(10, 29, 43, 0.9), rgba(7, 13, 25, 0.8));
+      linear-gradient(180deg, rgba(8, 24, 40, 0.92), rgba(5, 11, 22, 0.82));
+    border-color: rgba(103, 217, 255, 0.12);
   }
 
   .status-label,
   .focus-label {
-    font-size: 0.68rem;
+    font-family: var(--mono-font);
+    font-size: 0.58rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.16em;
     color: var(--muted-soft);
   }
 
   .status-card strong {
-    font-size: 0.98rem;
-    line-height: 1.35;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    color: #e8f0ff;
+  }
+
+  .mono-value {
+    font-family: var(--mono-font) !important;
   }
 
   .status-card small {
-    color: var(--muted);
+    color: var(--muted-soft);
+    font-size: 0.68rem;
   }
 
   .focus-block {
     display: grid;
-    gap: 8px;
+    gap: 6px;
   }
 
   .focus-strip {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
 
   .focus-strip button {
     pointer-events: auto;
-    border: 1px solid rgba(143, 193, 255, 0.2);
-    background: rgba(7, 14, 28, 0.78);
-    color: rgba(236, 244, 255, 0.84);
-    border-radius: 999px;
-    padding: 9px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border: 1px solid rgba(120, 170, 255, 0.12);
+    background: rgba(6, 12, 26, 0.8);
+    color: rgba(220, 232, 255, 0.6);
+    border-radius: 12px;
+    padding: 8px 6px;
     cursor: pointer;
-    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+    font-size: 0.68rem;
+    font-weight: 500;
+    transition: all 200ms ease;
+  }
+
+  .focus-icon {
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 200ms ease;
+  }
+
+  .focus-strip button:hover {
+    border-color: rgba(103, 217, 255, 0.28);
+    color: rgba(220, 232, 255, 0.88);
+    background: rgba(103, 217, 255, 0.06);
+  }
+
+  .focus-strip button:hover .focus-icon {
+    transform: scale(1.15);
   }
 
   .focus-strip button.active {
-    background: rgba(103, 217, 255, 0.16);
-    color: #f8fbff;
-    border-color: rgba(103, 217, 255, 0.42);
+    background:
+      linear-gradient(180deg, rgba(103, 217, 255, 0.14), rgba(103, 217, 255, 0.06));
+    color: #f0f8ff;
+    border-color: rgba(103, 217, 255, 0.36);
+    box-shadow: 0 0 12px rgba(103, 217, 255, 0.1);
+  }
+
+  .unit {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--muted-soft);
+  }
+
+  .body-name {
+    font-family: 'Inter', sans-serif !important;
+    text-transform: capitalize;
+  }
+
+  .status-dot-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.burning {
+    background: var(--accent-amber);
+    box-shadow: 0 0 8px rgba(240, 188, 94, 0.5);
+    animation: pulse-burn 0.8s ease-in-out infinite;
+  }
+
+  .status-dot.coasting {
+    background: var(--muted-soft);
+  }
+
+  @keyframes pulse-burn {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
   }
 
   @media (max-width: 860px) {
@@ -211,7 +313,7 @@
 
     .status-grid,
     .focus-strip {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
     }
   }
 </style>

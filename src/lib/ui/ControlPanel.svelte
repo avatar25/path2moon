@@ -26,14 +26,17 @@
   }
 </script>
 
-<section class="glass-panel control-panel">
+<section class="glass-panel control-panel" id="control-panel">
   <div class="panel-header">
     <div class="header-topline">
       <div>
         <p class="hud-eyebrow">Artemis Trajectory</p>
         <h1 class="hud-title">Launch Sequencer</h1>
       </div>
-      <div class="mission-badge">TLI</div>
+      <div class="mission-badge">
+        <span class="badge-dot"></span>
+        TLI
+      </div>
     </div>
 
     <p class="panel-copy">
@@ -47,6 +50,8 @@
       <span>1 unit = 1,000 km</span>
     </div>
   </div>
+
+  <div class="divider"></div>
 
   <div class="mission-strip">
     <div>
@@ -70,7 +75,7 @@
     </div>
 
     <div class="input-grid">
-      <label class="field">
+      <label class="field" id="field-payload-mass">
         <div class="field-head">
           <span>Payload Mass</span>
           <strong>kg</strong>
@@ -79,7 +84,7 @@
         <small>Dry payload only. Structural mass is estimated automatically.</small>
       </label>
 
-      <label class="field">
+      <label class="field" id="field-specific-impulse">
         <div class="field-head">
           <span>Specific Impulse</span>
           <strong>s</strong>
@@ -88,7 +93,7 @@
         <small>Seconds of effective exhaust performance.</small>
       </label>
 
-      <label class="field">
+      <label class="field" id="field-fuel-mass">
         <div class="field-head">
           <span>Initial Fuel Mass</span>
           <strong>kg</strong>
@@ -97,16 +102,19 @@
         <small>Available propellant for the translunar injection stage.</small>
       </label>
 
-      <label class="field">
+      <label class="field" id="field-strategy">
         <div class="field-head">
           <span>Launch Strategy</span>
           <strong>Mode</strong>
         </div>
-        <select bind:value={strategy}>
-          {#each STRATEGY_OPTIONS as option}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
+        <div class="select-wrap">
+          <select bind:value={strategy}>
+            {#each STRATEGY_OPTIONS as option}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+          <svg class="select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
         <small>{missionPreview.strategyMeta.blurb}</small>
       </label>
     </div>
@@ -159,9 +167,10 @@
   </div>
 
   <div class="launch-block">
-    <button class="launch-button" type="button" on:click={onLaunch}>
+    <button class="launch-button" type="button" id="launch-button" on:click={onLaunch}>
       <span class="button-kicker">Trans-Lunar Injection</span>
       <span class="button-title">Initiate Launch Sequence</span>
+      <span class="button-arrow">→</span>
     </button>
 
     <p class="footnote">
@@ -174,13 +183,13 @@
 <style>
   .control-panel {
     pointer-events: auto;
-    height: calc(100vh - 40px);
+    height: calc(100vh - 32px);
     padding: 18px;
-    border-radius: 28px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .panel-header {
@@ -196,68 +205,121 @@
   }
 
   .mission-badge {
-    border: 1px solid rgba(103, 217, 255, 0.22);
-    background: rgba(103, 217, 255, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    border: 1px solid rgba(103, 217, 255, 0.2);
+    background: rgba(103, 217, 255, 0.06);
     color: var(--accent-cyan);
     border-radius: 999px;
-    padding: 7px 11px;
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
+    padding: 6px 12px;
+    font-family: var(--mono-font);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
   }
 
   .panel-copy,
   .footnote {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .footnote {
+    font-size: 0.72rem;
+    color: var(--muted-soft);
     line-height: 1.45;
   }
 
   .header-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .header-tags span,
-  .strip-label {
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: var(--muted-soft);
+    gap: 6px;
   }
 
   .header-tags span {
-    border: 1px solid rgba(122, 215, 180, 0.15);
+    font-family: var(--mono-font);
+    font-size: 0.58rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted-soft);
+    border: 1px solid rgba(110, 231, 183, 0.12);
     border-radius: 999px;
-    padding: 7px 10px;
-    background: rgba(122, 215, 180, 0.06);
+    padding: 5px 10px;
+    background: rgba(110, 231, 183, 0.04);
+    transition: border-color 200ms ease, color 200ms ease;
+  }
+
+  .header-tags span:hover {
+    border-color: rgba(110, 231, 183, 0.24);
+    color: var(--accent-emerald);
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(103, 217, 255, 0.18) 20%,
+      rgba(103, 217, 255, 0.18) 80%,
+      transparent
+    );
   }
 
   .mission-strip {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    padding: 12px;
-    border-radius: 18px;
-    background: rgba(8, 16, 31, 0.72);
-    border: 1px solid rgba(131, 180, 255, 0.14);
+    gap: 1px;
+    border-radius: 14px;
+    background: rgba(120, 170, 255, 0.08);
+    overflow: hidden;
+    border: 1px solid rgba(120, 170, 255, 0.1);
   }
 
   .mission-strip div {
     display: grid;
-    gap: 6px;
+    gap: 4px;
+    padding: 10px 12px;
+    background: rgba(6, 12, 26, 0.85);
+  }
+
+  .strip-label {
+    font-family: var(--mono-font);
+    font-size: 0.56rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted-soft);
   }
 
   .mission-strip strong {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1.3;
+    color: #e8f0ff;
   }
 
   .panel-section {
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .section-header {
@@ -265,19 +327,22 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(131, 180, 255, 0.12);
+    padding-top: 4px;
+    border-top: 1px solid rgba(120, 170, 255, 0.08);
   }
 
   .section-header span {
-    font-size: 0.76rem;
+    font-family: var(--mono-font);
+    font-size: 0.62rem;
+    font-weight: 600;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #f3f8ff;
+    color: #d8e4ff;
   }
 
   .section-header small {
     color: var(--muted-soft);
+    font-size: 0.72rem;
   }
 
   .input-grid {
@@ -287,7 +352,7 @@
 
   .field {
     display: grid;
-    gap: 8px;
+    gap: 6px;
   }
 
   .field-head {
@@ -299,7 +364,8 @@
 
   .field-head span,
   .field-head strong {
-    font-size: 0.72rem;
+    font-family: var(--mono-font);
+    font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
   }
@@ -315,25 +381,60 @@
 
   .field input,
   .field select {
-    border: 1px solid rgba(143, 193, 255, 0.2);
-    background: rgba(6, 12, 25, 0.95);
-    color: #f7fbff;
-    border-radius: 16px;
-    padding: 13px 14px;
+    border: 1px solid rgba(120, 170, 255, 0.14);
+    background: rgba(4, 8, 18, 0.94);
+    color: #f0f6ff;
+    font-family: var(--mono-font);
+    font-size: 0.9rem;
+    border-radius: 12px;
+    padding: 11px 14px;
     outline: none;
-    transition: border-color 140ms ease, box-shadow 140ms ease;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .field input:hover,
+  .field select:hover {
+    border-color: rgba(103, 217, 255, 0.28);
+    background: rgba(6, 12, 24, 0.98);
   }
 
   .field input:focus,
   .field select:focus {
-    border-color: rgba(103, 217, 255, 0.42);
-    box-shadow: 0 0 0 3px rgba(103, 217, 255, 0.08);
+    border-color: rgba(103, 217, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(103, 217, 255, 0.07), 0 0 20px rgba(103, 217, 255, 0.06);
+    background: rgba(6, 12, 24, 1);
+  }
+
+  .select-wrap {
+    position: relative;
+  }
+
+  .select-wrap select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  .select-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--muted-soft);
+    transition: color 180ms ease;
+  }
+
+  .select-wrap:hover .select-chevron {
+    color: var(--accent-cyan);
   }
 
   .field small {
-    color: rgba(222, 236, 255, 0.64);
+    color: rgba(200, 218, 255, 0.48);
     line-height: 1.4;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
   }
 
   .mission-grid {
@@ -341,57 +442,109 @@
   }
 
   .emphasis-card {
+    border-color: rgba(240, 188, 94, 0.12);
     background:
-      linear-gradient(180deg, rgba(35, 28, 10, 0.28), rgba(7, 13, 25, 0.82)),
-      rgba(10, 18, 33, 0.86);
+      linear-gradient(180deg, rgba(40, 30, 8, 0.22), rgba(6, 11, 22, 0.88)),
+      rgba(10, 18, 33, 0.9);
   }
 
   .launch-block {
     margin-top: auto;
     display: grid;
-    gap: 12px;
+    gap: 10px;
+    padding-top: 4px;
   }
 
   .launch-button {
+    position: relative;
     border: 0;
-    border-radius: 20px;
-    padding: 15px 18px;
+    border-radius: 16px;
+    padding: 14px 18px;
     background:
-      linear-gradient(135deg, rgba(84, 196, 255, 0.96), rgba(240, 188, 94, 0.96));
-    color: #06101f;
+      linear-gradient(135deg, rgba(103, 217, 255, 0.92), rgba(110, 231, 183, 0.88) 45%, rgba(240, 188, 94, 0.92));
+    color: #060e1c;
     display: grid;
-    gap: 4px;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 2px;
     text-align: left;
     cursor: pointer;
-    transition: transform 160ms ease, box-shadow 160ms ease;
-    box-shadow: 0 16px 32px rgba(33, 111, 170, 0.3);
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 12px 40px rgba(103, 217, 255, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .launch-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.15),
+      transparent
+    );
+    background-size: 250% 100%;
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
   }
 
   .launch-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 18px 34px rgba(33, 111, 170, 0.4);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+      0 16px 48px rgba(103, 217, 255, 0.3),
+      0 6px 18px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.06);
+  }
+
+  .launch-button:active {
+    transform: translateY(0px);
+    filter: brightness(0.96);
   }
 
   .button-kicker {
-    font-size: 0.7rem;
+    grid-column: 1;
+    font-family: var(--mono-font);
+    font-size: 0.58rem;
+    font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    opacity: 0.72;
+    opacity: 0.64;
   }
 
   .button-title {
-    font-size: 1rem;
+    grid-column: 1;
+    font-size: 0.92rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
+  .button-arrow {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-size: 1.4rem;
+    font-weight: 300;
+    opacity: 0.6;
+    transition: transform 200ms ease, opacity 200ms ease;
+  }
+
+  .launch-button:hover .button-arrow {
+    transform: translateX(4px);
+    opacity: 0.9;
+  }
+
   .warning {
-    color: var(--accent-red);
+    color: var(--accent-red) !important;
   }
 
   .ok {
-    color: var(--accent-emerald);
+    color: var(--accent-emerald) !important;
   }
 
   @media (max-width: 860px) {
