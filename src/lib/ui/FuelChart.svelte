@@ -140,9 +140,13 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 14px;
-    height: 100%;
+    min-height: 220px;
+    height: 220px;
     border-radius: 24px;
     padding: 18px 20px;
+    background:
+      linear-gradient(180deg, rgba(10, 18, 35, 0.86), rgba(5, 10, 22, 0.62)),
+      var(--panel-bg);
   }
 
   .chart-header {
@@ -154,7 +158,7 @@
 
   .chart-copy {
     margin: 0;
-    max-width: 360px;
+    max-width: 220px;
     color: var(--muted);
     font-size: 0.88rem;
     line-height: 1.45;
@@ -162,6 +166,10 @@
 
   .chart-canvas-wrap {
     min-height: 0;
+  }
+
+  .chart-canvas-wrap :global(canvas) {
+    max-height: 140px;
   }
 
   canvas {
@@ -176,4 +184,3 @@
     }
   }
 </style>
-
