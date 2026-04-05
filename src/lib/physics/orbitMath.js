@@ -82,6 +82,7 @@ const TELEMETRY_TEMPLATE = {
   missionElapsedLabel: 'T+00:00:00',
   missionClockSeconds: 0,
   timeWarp: 1,
+  timeWarpModeLabel: 'Auto',
   fuelMassKg: DEFAULT_FORM_VALUES.fuelMassKg,
   statusText: 'Parking orbit hold',
   strategyLabel: 'Hohmann Transfer',
@@ -966,7 +967,7 @@ export function sampleProjectedTrajectory(simState, options = {}) {
   return samples;
 }
 
-export function buildTelemetry(simState) {
+export function buildTelemetry(simState, options = {}) {
   const moonState = getMoonState(simState.timeSeconds, simState.mission.moonPhaseAngleRad);
   const velocityKmPerSecond = magnitude(simState.rocket.velocityKmPerSecond);
   const earthCenterDistanceKm = magnitude(simState.rocket.positionKm);
@@ -1003,7 +1004,8 @@ export function buildTelemetry(simState) {
     sphereOfInfluence: moonCenterDistanceKm <= MOON_SOI_RADIUS_KM ? 'Moon' : 'Earth',
     missionElapsedLabel: formatMissionTime(simState.timeSeconds),
     missionClockSeconds: simState.timeSeconds,
-    timeWarp: getTimeWarpForState(simState),
+    timeWarp: options.timeWarp ?? getTimeWarpForState(simState),
+    timeWarpModeLabel: options.timeWarpModeLabel ?? 'Auto',
     fuelMassKg: simState.rocket.fuelMassKg,
     statusText,
     strategyLabel: simState.mission.preview.strategyMeta.label,

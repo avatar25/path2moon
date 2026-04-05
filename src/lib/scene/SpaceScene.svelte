@@ -26,6 +26,7 @@
   export let launchSequenceId = 0;
   export let focusTarget = 'system';
   export let viewMode = '3d';
+  export let timeWarpSetting = 'auto';
   export let onSample = () => {};
 
   let container;
@@ -204,9 +205,26 @@
     }
   }
 
+  function getEffectiveTimeWarp() {
+    if (!simState) {
+      return 1;
+    }
+
+    return timeWarpSetting === 'auto'
+      ? getTimeWarpForState(simState)
+      : Math.max(1, Number(timeWarpSetting) || 1);
+  }
+
+  function getTimeWarpModeLabel() {
+    return timeWarpSetting === 'auto' ? 'Auto' : 'Manual';
+  }
+
   function emitSample() {
     const payload = {
-      telemetry: buildTelemetry(simState)
+      telemetry: buildTelemetry(simState, {
+        timeWarp: getEffectiveTimeWarp(),
+        timeWarpModeLabel: getTimeWarpModeLabel()
+      })
     };
 
     if (simState.sampling.fuelHistoryVersion !== lastFuelHistoryVersion) {
@@ -308,7 +326,7 @@
     const realDeltaSeconds = Math.min(0.12, (timestampMs - lastFrameMs) / 1000);
     lastFrameMs = timestampMs;
 
-    simState = stepSimulation(simState, realDeltaSeconds * getTimeWarpForState(simState), {
+    simState = stepSimulation(simState, realDeltaSeconds * getEffectiveTimeWarp(), {
       mutate: true
     });
     maybeAppendPathPoint();
@@ -503,7 +521,10 @@
       {projectedPositionsKm}
       {pathVersion}
       {focusTarget}
-      telemetry={buildTelemetry(simState)}
+      telemetry={buildTelemetry(simState, {
+        timeWarp: getEffectiveTimeWarp(),
+        timeWarpModeLabel: getTimeWarpModeLabel()
+      })}
     />
   {/if}
 </div>

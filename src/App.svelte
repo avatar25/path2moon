@@ -15,6 +15,7 @@
   let strategy = DEFAULT_FORM_VALUES.strategy;
   let focusTarget = 'system';
   let viewMode = '3d';
+  let timeWarpSetting = 'auto';
   let launchSequenceId = 0;
   let telemetry = buildInitialTelemetry(DEFAULT_FORM_VALUES);
   let fuelHistory = [{ timeSeconds: 0, fuelMassKg: DEFAULT_FORM_VALUES.fuelMassKg }];
@@ -52,6 +53,7 @@
     {launchSequenceId}
     {focusTarget}
     {viewMode}
+    {timeWarpSetting}
     onSample={handleSceneSample}
   />
 
@@ -72,8 +74,10 @@
         {telemetry}
         {focusTarget}
         {viewMode}
+        {timeWarpSetting}
         onFocusChange={(nextFocusTarget) => (focusTarget = nextFocusTarget)}
         onViewModeChange={(nextViewMode) => (viewMode = nextViewMode)}
+        onTimeWarpChange={(nextTimeWarpSetting) => (timeWarpSetting = nextTimeWarpSetting)}
       />
     </div>
 

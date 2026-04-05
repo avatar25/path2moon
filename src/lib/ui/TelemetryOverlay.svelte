@@ -2,8 +2,10 @@
   export let telemetry;
   export let focusTarget = 'system';
   export let viewMode = '3d';
+  export let timeWarpSetting = 'auto';
   export let onFocusChange = () => {};
   export let onViewModeChange = () => {};
+  export let onTimeWarpChange = () => {};
 
   const numberFormatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0
@@ -32,6 +34,15 @@
   const viewOptions = [
     { value: '3d', label: '3D' },
     { value: '2d', label: '2D' }
+  ];
+
+  const timeWarpOptions = [
+    { value: 'auto', label: 'Auto' },
+    { value: '1', label: '1x' },
+    { value: '10', label: '10x' },
+    { value: '30', label: '30x' },
+    { value: '120', label: '120x' },
+    { value: '600', label: '600x' }
   ];
 </script>
 
@@ -67,7 +78,7 @@
     <article class="status-card">
       <span class="status-label">Mission Clock</span>
       <strong class="mono-value">{telemetry.missionElapsedLabel}</strong>
-      <small>Time warp ×{telemetry.timeWarp}</small>
+      <small>{telemetry.timeWarpModeLabel} time warp ×{telemetry.timeWarp}</small>
     </article>
   </div>
 
@@ -83,6 +94,21 @@
         >
           <span class="focus-icon">{option.icon}</span>
           <span>{option.label}</span>
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="focus-block">
+    <span class="focus-label">Simulation Speed</span>
+    <div class="warp-strip">
+      {#each timeWarpOptions as option}
+        <button
+          class:active={timeWarpSetting === option.value}
+          on:click={() => onTimeWarpChange(option.value)}
+          type="button"
+        >
+          {option.label}
         </button>
       {/each}
     </div>
@@ -282,6 +308,12 @@
     gap: 6px;
   }
 
+  .warp-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
   .focus-strip button {
     pointer-events: auto;
     display: flex;
@@ -299,6 +331,22 @@
     transition: all 200ms ease;
   }
 
+  .warp-strip button {
+    pointer-events: auto;
+    border: 1px solid rgba(120, 170, 255, 0.12);
+    background: rgba(6, 12, 26, 0.8);
+    color: rgba(220, 232, 255, 0.6);
+    border-radius: 12px;
+    padding: 8px 6px;
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-weight: 500;
+    font-family: var(--mono-font);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 200ms ease;
+  }
+
   .focus-icon {
     font-size: 1rem;
     line-height: 1;
@@ -311,11 +359,25 @@
     background: rgba(103, 217, 255, 0.06);
   }
 
+  .warp-strip button:hover {
+    border-color: rgba(103, 217, 255, 0.28);
+    color: rgba(220, 232, 255, 0.88);
+    background: rgba(103, 217, 255, 0.06);
+  }
+
   .focus-strip button:hover .focus-icon {
     transform: scale(1.15);
   }
 
   .focus-strip button.active {
+    background:
+      linear-gradient(180deg, rgba(103, 217, 255, 0.14), rgba(103, 217, 255, 0.06));
+    color: #f0f8ff;
+    border-color: rgba(103, 217, 255, 0.36);
+    box-shadow: 0 0 12px rgba(103, 217, 255, 0.1);
+  }
+
+  .warp-strip button.active {
     background:
       linear-gradient(180deg, rgba(103, 217, 255, 0.14), rgba(103, 217, 255, 0.06));
     color: #f0f8ff;
@@ -368,7 +430,8 @@
     }
 
     .status-grid,
-    .focus-strip {
+    .focus-strip,
+    .warp-strip {
       grid-template-columns: 1fr 1fr;
     }
   }
