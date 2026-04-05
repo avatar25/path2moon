@@ -757,7 +757,9 @@ function cloneFuelHistory(fuelHistory) {
   return fuelHistory.map((sample) => ({ ...sample }));
 }
 
-export function cloneSimulationState(simState) {
+export function cloneSimulationState(simState, options = {}) {
+  const includeFuelHistory = options.includeFuelHistory ?? true;
+
   return {
     timeSeconds: simState.timeSeconds,
     launched: simState.launched,
@@ -783,7 +785,8 @@ export function cloneSimulationState(simState) {
     },
     sampling: {
       lastLoggedFuelTimeSeconds: simState.sampling.lastLoggedFuelTimeSeconds,
-      fuelHistory: cloneFuelHistory(simState.sampling.fuelHistory)
+      fuelHistoryVersion: simState.sampling.fuelHistoryVersion ?? 0,
+      fuelHistory: includeFuelHistory ? cloneFuelHistory(simState.sampling.fuelHistory) : []
     }
   };
 }
@@ -830,16 +833,16 @@ export function createSimulationState(inputValues, options = {}) {
     },
     sampling: {
       lastLoggedFuelTimeSeconds: 0,
+      fuelHistoryVersion: 0,
       fuelHistory: [{ timeSeconds: 0, fuelMassKg: preview.fuelMassKg }]
     }
   };
 }
 
-function appendFuelSample(nextState) {
+function appendFuelSample(nextState, historyIntervalSeconds = 900) {
   const shouldAppend =
     nextState.timeSeconds === 0 ||
-    nextState.timeSeconds - nextState.sampling.lastLoggedFuelTimeSeconds >= 900 ||
-    nextState.burn.active;
+    nextState.timeSeconds - nextState.sampling.lastLoggedFuelTimeSeconds >= historyIntervalSeconds;
 
   if (!shouldAppend) {
     return;
@@ -850,6 +853,7 @@ function appendFuelSample(nextState) {
     timeSeconds: nextState.timeSeconds,
     fuelMassKg: nextState.rocket.fuelMassKg
   });
+  nextState.sampling.fuelHistoryVersion += 1;
 
   if (nextState.sampling.fuelHistory.length > 540) {
     nextState.sampling.fuelHistory.shift();
@@ -875,12 +879,23 @@ export function getTimeWarpForState(simState) {
   return 1800;
 }
 
-export function stepSimulation(simState, deltaTimeSeconds) {
-  const nextState = cloneSimulationState(simState);
+export function stepSimulation(simState, deltaTimeSeconds, options = {}) {
+  const mutate = options.mutate ?? false;
+  const trackHistory = options.trackHistory ?? true;
+  const burnSubstepSeconds = options.burnSubstepSeconds ?? 0.5;
+  const coastSubstepSeconds = options.coastSubstepSeconds ?? 20;
+  const burnHistoryIntervalSeconds = options.burnHistoryIntervalSeconds ?? 6;
+  const coastHistoryIntervalSeconds = options.coastHistoryIntervalSeconds ?? 900;
+  const nextState = mutate
+    ? simState
+    : cloneSimulationState(simState, { includeFuelHistory: trackHistory });
   let remainingTimeSeconds = Math.max(0, deltaTimeSeconds);
 
   while (remainingTimeSeconds > 0) {
-    const substepSeconds = Math.min(remainingTimeSeconds, nextState.burn.active ? 0.5 : 20);
+    const substepSeconds = Math.min(
+      remainingTimeSeconds,
+      nextState.burn.active ? burnSubstepSeconds : coastSubstepSeconds
+    );
     const updatedDynamicState = rk4DynamicStep(nextState, substepSeconds);
 
     nextState.rocket.positionKm = updatedDynamicState.positionKm;
@@ -918,7 +933,12 @@ export function stepSimulation(simState, deltaTimeSeconds) {
       nextState.navigation.enteredMoonSOI = true;
     }
 
-    appendFuelSample(nextState);
+    if (trackHistory) {
+      appendFuelSample(
+        nextState,
+        nextState.burn.active ? burnHistoryIntervalSeconds : coastHistoryIntervalSeconds
+      );
+    }
   }
 
   return nextState;
@@ -928,11 +948,18 @@ export function sampleProjectedTrajectory(simState, options = {}) {
   const horizonSeconds = options.horizonSeconds ?? (simState.launched ? 8 * DAY_SECONDS : 1.5 * DAY_SECONDS);
   const points = options.points ?? 220;
   const stepSeconds = horizonSeconds / points;
-  let probe = cloneSimulationState(simState);
+  const burnSubstepSeconds = options.burnSubstepSeconds ?? 3;
+  const coastSubstepSeconds = options.coastSubstepSeconds ?? Math.min(240, Math.max(60, stepSeconds / 10));
+  let probe = cloneSimulationState(simState, { includeFuelHistory: false });
   const samples = [cloneVector(probe.rocket.positionKm)];
 
   for (let index = 0; index < points; index += 1) {
-    probe = stepSimulation(probe, stepSeconds);
+    probe = stepSimulation(probe, stepSeconds, {
+      mutate: true,
+      trackHistory: false,
+      burnSubstepSeconds,
+      coastSubstepSeconds
+    });
     samples.push(cloneVector(probe.rocket.positionKm));
   }
 

@@ -46,6 +46,7 @@
   let previousLaunchSequenceId = launchSequenceId;
   let previousConfigKey = '';
   let previousFocusTarget = focusTarget;
+  let lastFuelHistoryVersion = -1;
   let earthTexture;
   let moonTexture;
 
@@ -159,6 +160,36 @@
     return new THREE.Points(geometry, material);
   }
 
+  function getProjectionConfig() {
+    if (!simState?.launched) {
+      return {
+        horizonSeconds: DAY_SECONDS,
+        points: 72,
+        updateIntervalMs: 3200,
+        burnSubstepSeconds: 3,
+        coastSubstepSeconds: 180
+      };
+    }
+
+    if (simState.burn.active) {
+      return {
+        horizonSeconds: 3 * DAY_SECONDS,
+        points: 84,
+        updateIntervalMs: 2600,
+        burnSubstepSeconds: 3,
+        coastSubstepSeconds: 240
+      };
+    }
+
+    return {
+      horizonSeconds: 8 * DAY_SECONDS,
+      points: 132,
+      updateIntervalMs: 1800,
+      burnSubstepSeconds: 3,
+      coastSubstepSeconds: 240
+    };
+  }
+
   function updateLineGeometry(line, positionsKm) {
     const points = positionsKm.map(toRenderVector);
     line.geometry.setFromPoints(points);
@@ -169,21 +200,31 @@
   }
 
   function emitSample() {
-    onSample({
-      telemetry: buildTelemetry(simState),
-      fuelHistory: simState.sampling.fuelHistory.map((sample) => ({ ...sample }))
-    });
+    const payload = {
+      telemetry: buildTelemetry(simState)
+    };
+
+    if (simState.sampling.fuelHistoryVersion !== lastFuelHistoryVersion) {
+      payload.fuelHistory = simState.sampling.fuelHistory.map((sample) => ({ ...sample }));
+      lastFuelHistoryVersion = simState.sampling.fuelHistoryVersion;
+    }
+
+    onSample(payload);
   }
 
   function resetMission(launched = false) {
     simState = createSimulationState(currentInputs(), { launched });
+    lastFuelHistoryVersion = -1;
     pathPositionsKm = [[...simState.rocket.positionKm]];
+    const projectionConfig = getProjectionConfig();
     updateLineGeometry(pathLine, pathPositionsKm);
     updateLineGeometry(
       projectionLine,
       sampleProjectedTrajectory(simState, {
-        horizonSeconds: launched ? 8 * DAY_SECONDS : DAY_SECONDS,
-        points: 180
+        horizonSeconds: projectionConfig.horizonSeconds,
+        points: projectionConfig.points,
+        burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
+        coastSubstepSeconds: projectionConfig.coastSubstepSeconds
       })
     );
     updateSceneObjects();
@@ -261,16 +302,22 @@
     const realDeltaSeconds = Math.min(0.12, (timestampMs - lastFrameMs) / 1000);
     lastFrameMs = timestampMs;
 
-    simState = stepSimulation(simState, realDeltaSeconds * getTimeWarpForState(simState));
+    simState = stepSimulation(simState, realDeltaSeconds * getTimeWarpForState(simState), {
+      mutate: true
+    });
     maybeAppendPathPoint();
     updateSceneObjects();
 
-    if (timestampMs - lastProjectionMs > 900) {
+    const projectionConfig = getProjectionConfig();
+
+    if (timestampMs - lastProjectionMs > projectionConfig.updateIntervalMs) {
       updateLineGeometry(
         projectionLine,
         sampleProjectedTrajectory(simState, {
-          horizonSeconds: simState.launched ? 8 * DAY_SECONDS : DAY_SECONDS,
-          points: 180
+          horizonSeconds: projectionConfig.horizonSeconds,
+          points: projectionConfig.points,
+          burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
+          coastSubstepSeconds: projectionConfig.coastSubstepSeconds
         })
       );
       lastProjectionMs = timestampMs;

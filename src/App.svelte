@@ -32,7 +32,9 @@
 
   function handleSceneSample(sample) {
     telemetry = sample.telemetry;
-    fuelHistory = sample.fuelHistory;
+    if (sample.fuelHistory) {
+      fuelHistory = sample.fuelHistory;
+    }
   }
 </script>
 
