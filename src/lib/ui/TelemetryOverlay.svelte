@@ -1,7 +1,9 @@
 <script>
   export let telemetry;
   export let focusTarget = 'system';
+  export let viewMode = '3d';
   export let onFocusChange = () => {};
+  export let onViewModeChange = () => {};
 
   const numberFormatter = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0
@@ -26,6 +28,11 @@
     { value: 'moon', label: 'Moon', icon: '☽' },
     { value: 'rocket', label: 'Rocket', icon: '▲' }
   ];
+
+  const viewOptions = [
+    { value: '3d', label: '3D' },
+    { value: '2d', label: '2D' }
+  ];
 </script>
 
 <section class="glass-panel telemetry-panel" id="telemetry-panel">
@@ -36,7 +43,20 @@
       </p>
       <h2 class="hud-title">{telemetry.strategyLabel}</h2>
     </div>
-    <div class="soi-pill">{telemetry.sphereOfInfluence} SOI</div>
+    <div class="header-stack">
+      <div class="view-toggle">
+        {#each viewOptions as option}
+          <button
+            class:active={viewMode === option.value}
+            on:click={() => onViewModeChange(option.value)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        {/each}
+      </div>
+      <div class="soi-pill">{telemetry.sphereOfInfluence} SOI</div>
+    </div>
   </div>
 
   <div class="status-grid">
@@ -128,6 +148,12 @@
     gap: 10px;
   }
 
+  .header-stack {
+    display: grid;
+    gap: 8px;
+    justify-items: end;
+  }
+
   .telemetry-lockup {
     display: grid;
     gap: 3px;
@@ -162,6 +188,36 @@
     text-transform: uppercase;
     letter-spacing: 0.14em;
     white-space: nowrap;
+  }
+
+  .view-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(6, 12, 26, 0.86);
+    border: 1px solid rgba(120, 170, 255, 0.12);
+  }
+
+  .view-toggle button {
+    pointer-events: auto;
+    border: 0;
+    background: transparent;
+    color: var(--muted-soft);
+    border-radius: 999px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: var(--mono-font);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: background 180ms ease, color 180ms ease;
+  }
+
+  .view-toggle button.active {
+    background: rgba(103, 217, 255, 0.16);
+    color: #f0f8ff;
   }
 
   .status-grid {

@@ -2,8 +2,10 @@
   import { onDestroy, onMount } from 'svelte';
   import * as THREE from 'three';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  import OrbitalMap2D from './OrbitalMap2D.svelte';
   import {
     DAY_SECONDS,
+    EARTH_MOON_DISTANCE_KM,
     EARTH_RADIUS_KM,
     KM_PER_RENDER_UNIT,
     MOON_RADIUS_KM,
@@ -23,6 +25,7 @@
   export let strategy;
   export let launchSequenceId = 0;
   export let focusTarget = 'system';
+  export let viewMode = '3d';
   export let onSample = () => {};
 
   let container;
@@ -43,6 +46,8 @@
   let lastProjectionMs = 0;
   let simState;
   let pathPositionsKm = [];
+  let projectedPositionsKm = [];
+  let pathVersion = 0;
   let previousLaunchSequenceId = launchSequenceId;
   let previousConfigKey = '';
   let previousFocusTarget = focusTarget;
@@ -216,17 +221,16 @@
     simState = createSimulationState(currentInputs(), { launched });
     lastFuelHistoryVersion = -1;
     pathPositionsKm = [[...simState.rocket.positionKm]];
+    pathVersion += 1;
     const projectionConfig = getProjectionConfig();
+    projectedPositionsKm = sampleProjectedTrajectory(simState, {
+      horizonSeconds: projectionConfig.horizonSeconds,
+      points: projectionConfig.points,
+      burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
+      coastSubstepSeconds: projectionConfig.coastSubstepSeconds
+    });
     updateLineGeometry(pathLine, pathPositionsKm);
-    updateLineGeometry(
-      projectionLine,
-      sampleProjectedTrajectory(simState, {
-        horizonSeconds: projectionConfig.horizonSeconds,
-        points: projectionConfig.points,
-        burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
-        coastSubstepSeconds: projectionConfig.coastSubstepSeconds
-      })
-    );
+    updateLineGeometry(projectionLine, projectedPositionsKm);
     updateSceneObjects();
     emitSample();
   }
@@ -254,10 +258,12 @@
     const latestPoint = pathPositionsKm[pathPositionsKm.length - 1];
 
     if (!latestPoint || magnitude(subVec(simState.rocket.positionKm, latestPoint)) > 1800) {
-      pathPositionsKm.push([...simState.rocket.positionKm]);
-      if (pathPositionsKm.length > 1800) {
-        pathPositionsKm.shift();
+      const nextPathPositions = [...pathPositionsKm, [...simState.rocket.positionKm]];
+      if (nextPathPositions.length > 1800) {
+        nextPathPositions.shift();
       }
+      pathPositionsKm = nextPathPositions;
+      pathVersion += 1;
       updateLineGeometry(pathLine, pathPositionsKm);
     }
   }
@@ -311,15 +317,13 @@
     const projectionConfig = getProjectionConfig();
 
     if (timestampMs - lastProjectionMs > projectionConfig.updateIntervalMs) {
-      updateLineGeometry(
-        projectionLine,
-        sampleProjectedTrajectory(simState, {
-          horizonSeconds: projectionConfig.horizonSeconds,
-          points: projectionConfig.points,
-          burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
-          coastSubstepSeconds: projectionConfig.coastSubstepSeconds
-        })
-      );
+      projectedPositionsKm = sampleProjectedTrajectory(simState, {
+        horizonSeconds: projectionConfig.horizonSeconds,
+        points: projectionConfig.points,
+        burnSubstepSeconds: projectionConfig.burnSubstepSeconds,
+        coastSubstepSeconds: projectionConfig.coastSubstepSeconds
+      });
+      updateLineGeometry(projectionLine, projectedPositionsKm);
       lastProjectionMs = timestampMs;
     }
 
@@ -330,8 +334,10 @@
 
     const target = getFocusAnchor();
     controls.target.lerp(target, 0.08);
-    controls.update();
-    renderer.render(scene, camera);
+    if (viewMode === '3d') {
+      controls.update();
+      renderer.render(scene, camera);
+    }
     frameId = requestAnimationFrame(animate);
   }
 
@@ -480,9 +486,27 @@
     controls.target.copy(target);
     camera.position.copy(target.clone().add(getDesiredCameraOffset()));
   }
+
+  $: currentMoonPositionKm = simState
+    ? getMoonState(simState.timeSeconds, simState.mission.moonPhaseAngleRad).positionKm
+    : [EARTH_MOON_DISTANCE_KM, 0, 0];
 </script>
 
-<div bind:this={container} class="scene-root"></div>
+<div class="scene-root" data-view-mode={viewMode}>
+  <div bind:this={container} class:hidden={viewMode === '2d'} class="scene-canvas"></div>
+
+  {#if simState && viewMode === '2d'}
+    <OrbitalMap2D
+      rocketPositionKm={simState.rocket.positionKm}
+      moonPositionKm={currentMoonPositionKm}
+      {pathPositionsKm}
+      {projectedPositionsKm}
+      {pathVersion}
+      {focusTarget}
+      telemetry={buildTelemetry(simState)}
+    />
+  {/if}
+</div>
 
 <style>
   .scene-root {
@@ -490,7 +514,17 @@
     inset: 0;
   }
 
-  .scene-root :global(canvas) {
+  .scene-canvas {
+    position: absolute;
+    inset: 0;
+  }
+
+  .scene-canvas.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .scene-canvas :global(canvas) {
     display: block;
     width: 100%;
     height: 100%;

@@ -14,6 +14,7 @@
   let fuelMassKg = DEFAULT_FORM_VALUES.fuelMassKg;
   let strategy = DEFAULT_FORM_VALUES.strategy;
   let focusTarget = 'system';
+  let viewMode = '3d';
   let launchSequenceId = 0;
   let telemetry = buildInitialTelemetry(DEFAULT_FORM_VALUES);
   let fuelHistory = [{ timeSeconds: 0, fuelMassKg: DEFAULT_FORM_VALUES.fuelMassKg }];
@@ -50,6 +51,7 @@
     {strategy}
     {launchSequenceId}
     {focusTarget}
+    {viewMode}
     onSample={handleSceneSample}
   />
 
@@ -69,7 +71,9 @@
       <TelemetryOverlay
         {telemetry}
         {focusTarget}
+        {viewMode}
         onFocusChange={(nextFocusTarget) => (focusTarget = nextFocusTarget)}
+        onViewModeChange={(nextViewMode) => (viewMode = nextViewMode)}
       />
     </div>
 
