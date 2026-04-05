@@ -1,18 +1,24 @@
 :root {
   color-scheme: dark;
-  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
   background:
     radial-gradient(circle at top, rgba(104, 171, 255, 0.12), transparent 36%),
     radial-gradient(circle at bottom right, rgba(245, 196, 94, 0.14), transparent 28%),
     #030612;
   color: #eff6ff;
-  --panel-bg: rgba(6, 13, 27, 0.74);
-  --panel-border: rgba(181, 217, 255, 0.2);
-  --panel-shadow: 0 24px 72px rgba(0, 0, 0, 0.42);
+  --panel-bg: rgba(7, 14, 28, 0.78);
+  --panel-border: rgba(130, 188, 255, 0.2);
+  --panel-shadow: 0 24px 72px rgba(0, 0, 0, 0.46);
   --accent-amber: #f0bc5e;
   --accent-cyan: #67d9ff;
   --accent-red: #ff7f7a;
+  --accent-emerald: #7ad7b4;
   --muted: rgba(235, 244, 255, 0.72);
+  --muted-soft: rgba(235, 244, 255, 0.54);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html,
@@ -29,6 +35,7 @@ body {
     radial-gradient(circle at top left, rgba(120, 160, 255, 0.16), transparent 32%),
     radial-gradient(circle at bottom right, rgba(240, 188, 94, 0.18), transparent 22%),
     linear-gradient(140deg, #030612 0%, #050b17 44%, #02040a 100%);
+  font-variant-numeric: tabular-nums;
 }
 
 button,
@@ -41,17 +48,33 @@ select {
   position: relative;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+}
+
+.viewport-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 48%, rgba(2, 4, 10, 0.36) 100%),
+    linear-gradient(90deg, rgba(98, 146, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(98, 146, 255, 0.05) 1px, transparent 1px);
+  background-size: auto, 96px 96px, 96px 96px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .hud-layer {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(300px, 360px) 1fr minmax(320px, 400px);
+  grid-template-columns: minmax(300px, 352px) 1fr minmax(300px, 370px);
   grid-template-rows: minmax(0, 1fr) auto;
   pointer-events: none;
-  padding: 24px;
-  gap: 18px;
+  padding: 20px;
+  gap: 14px;
+  z-index: 1;
 }
 
 .panel-stack,
@@ -77,65 +100,81 @@ select {
   grid-row: 2;
   align-self: end;
   justify-self: end;
-  width: min(420px, calc(100vw - 48px));
+  width: min(390px, calc(100vw - 40px));
 }
 
 .glass-panel {
+  position: relative;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(15, 24, 43, 0.88), rgba(7, 12, 24, 0.7)),
+    linear-gradient(180deg, rgba(12, 21, 41, 0.9), rgba(7, 11, 22, 0.76)),
     var(--panel-bg);
   border: 1px solid var(--panel-border);
   box-shadow: var(--panel-shadow);
   backdrop-filter: blur(22px);
 }
 
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 22%),
+    radial-gradient(circle at top right, rgba(103, 217, 255, 0.08), transparent 30%);
+  pointer-events: none;
+}
+
 .hud-title {
   margin: 0;
   font-family: 'Eurostile', 'Avenir Next Condensed', sans-serif;
-  font-size: 1rem;
+  font-size: 1.04rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
+  line-height: 1.24;
 }
 
 .hud-eyebrow {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--accent-cyan);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .metric-card {
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(9, 17, 34, 0.78);
-  border: 1px solid rgba(131, 180, 255, 0.16);
+  padding: 13px 14px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 19, 37, 0.92), rgba(7, 13, 25, 0.78));
+  border: 1px solid rgba(131, 180, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .metric-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-soft);
 }
 
 .metric-value {
   margin-top: 8px;
-  font-size: 1.4rem;
+  font-size: 1.28rem;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 .metric-subtext {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .accent-text {
@@ -149,7 +188,7 @@ select {
 @media (max-width: 1180px) {
   .hud-layer {
     grid-template-columns: minmax(280px, 340px) 1fr;
-    grid-template-rows: auto auto 220px;
+    grid-template-rows: auto auto auto;
   }
 
   .telemetry-stack {
@@ -161,6 +200,7 @@ select {
     grid-column: 2;
     grid-row: 3;
     justify-self: end;
+    width: min(360px, calc(100vw - 40px));
   }
 }
 

@@ -28,8 +28,16 @@
   let canvas;
   let chart;
 
+  const numberFormatter = new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0
+  });
+
   function formatHourMark(sample) {
     return `${(sample.timeSeconds / 3600).toFixed(1)} h`;
+  }
+
+  function formatMass(value) {
+    return `${numberFormatter.format(value)} kg`;
   }
 
   function syncChart() {
@@ -87,7 +95,8 @@
               color: 'rgba(173, 205, 255, 0.08)'
             },
             ticks: {
-              color: 'rgba(232, 241, 255, 0.72)'
+              color: 'rgba(232, 241, 255, 0.62)',
+              maxTicksLimit: 4
             }
           },
           y: {
@@ -95,7 +104,8 @@
               color: 'rgba(173, 205, 255, 0.08)'
             },
             ticks: {
-              color: 'rgba(232, 241, 255, 0.72)',
+              color: 'rgba(232, 241, 255, 0.62)',
+              maxTicksLimit: 4,
               callback(value) {
                 return `${Number(value).toLocaleString('en-US', {
                   maximumFractionDigits: 0
@@ -114,23 +124,37 @@
     chart?.destroy();
   });
 
+  $: latestSample = samples[samples.length - 1] ?? { timeSeconds: 0, fuelMassKg: 0 };
+  $: initialSample = samples[0] ?? { timeSeconds: 0, fuelMassKg: 0 };
+  $: spentFuelKg = Math.max(0, initialSample.fuelMassKg - latestSample.fuelMassKg);
   $: syncChart();
 </script>
 
 <section class="glass-panel chart-panel">
-  <div class="chart-header">
+  <div class="chart-topline">
     <div>
-      <p class="hud-eyebrow">Propellant</p>
-      <h2 class="hud-title">Fuel Mass vs Mission Time</h2>
+      <p class="hud-eyebrow">Propellant Curve</p>
+      <h2 class="hud-title">Fuel vs Mission Time</h2>
     </div>
-    <p class="chart-copy">
-      Burn is governed by the Tsiolkovsky rocket equation and then held steady through the
-      ballistic coast phase.
-    </p>
+    <div class="chart-summary">
+      <div>
+        <span>Current</span>
+        <strong>{formatMass(latestSample.fuelMassKg)}</strong>
+      </div>
+      <div>
+        <span>Spent</span>
+        <strong>{formatMass(spentFuelKg)}</strong>
+      </div>
+    </div>
   </div>
 
   <div class="chart-canvas-wrap">
     <canvas bind:this={canvas}></canvas>
+  </div>
+
+  <div class="chart-foot">
+    <span>Burn model: Tsiolkovsky equation + mission clock samples</span>
+    <span>{formatHourMark(latestSample)}</span>
   </div>
 </section>
 
@@ -138,30 +162,45 @@
   .chart-panel {
     pointer-events: auto;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 14px;
-    min-height: 220px;
-    height: 220px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    min-height: 214px;
+    height: 214px;
     border-radius: 24px;
-    padding: 18px 20px;
+    padding: 16px 18px;
     background:
       linear-gradient(180deg, rgba(10, 18, 35, 0.86), rgba(5, 10, 22, 0.62)),
       var(--panel-bg);
   }
 
-  .chart-header {
+  .chart-topline {
     display: flex;
-    align-items: end;
+    align-items: start;
     justify-content: space-between;
-    gap: 18px;
+    gap: 14px;
   }
 
-  .chart-copy {
-    margin: 0;
-    max-width: 220px;
-    color: var(--muted);
-    font-size: 0.88rem;
-    line-height: 1.45;
+  .chart-summary {
+    display: flex;
+    gap: 14px;
+  }
+
+  .chart-summary div {
+    display: grid;
+    gap: 4px;
+  }
+
+  .chart-summary span,
+  .chart-foot {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted-soft);
+  }
+
+  .chart-summary strong {
+    font-size: 0.9rem;
+    color: #f6fbff;
   }
 
   .chart-canvas-wrap {
@@ -169,7 +208,7 @@
   }
 
   .chart-canvas-wrap :global(canvas) {
-    max-height: 140px;
+    max-height: 120px;
   }
 
   canvas {
@@ -177,10 +216,25 @@
     height: 100%;
   }
 
+  .chart-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    line-height: 1.4;
+  }
+
   @media (max-width: 860px) {
-    .chart-header {
+    .chart-topline,
+    .chart-summary,
+    .chart-foot {
       flex-direction: column;
       align-items: flex-start;
+    }
+
+    .chart-panel {
+      height: auto;
+      min-height: 240px;
     }
   }
 </style>
